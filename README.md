@@ -1,4 +1,4 @@
-# Домашнее задание к занятию "`SQL. Часть 2`" - `Невзоров Владислав Викторович`
+# Домашнее задание к занятию "`Индексы`" - `Невзоров Владислав Викторович`
 
 
 ### Инструкция по выполнению домашнего задания
@@ -22,22 +22,44 @@
 
 ---
 # Задание 1
-Одним запросом получите информацию о магазине, в котором обслуживается более 300 покупателей, и выведите в результат следующую информацию:
+Напишите запрос к учебной базе данных, который вернёт процентное отношение общего размера всех индексов к общему размеру всех таблиц.
 
-- фамилия и имя сотрудника из этого магазина;
-- город нахождения магазина;
-- количество пользователей, закреплённых в этом магазине. 
-
-![alt text](https://github.com/VN351/sys-pattern-homework/raw/main/img/sql2t1.png)
+![alt text](https://github.com/VN351/sys-pattern-homework/raw/main/img/sql3t1.png)
 
 # Задание 2
-Получите количество фильмов, продолжительность которых больше средней продолжительности всех фильмов.
+Выполните explain analyze следующего запроса:
+```
+select distinct concat(c.last_name, ' ', c.first_name), sum(p.amount) over (partition by c.customer_id, f.title)
+from payment p, rental r, customer c, inventory i, film f
+where date(p.payment_date) = '2005-07-30' and p.payment_date = r.rental_date and r.customer_id = c.customer_id and i.inventory_id = r.inventory_id
+```
+перечислите узкие места;
+Узкие места:
+- Использование неявных JOIN операторов.
+- Использование функции CONCAT в SELECT операторе.
+- Отсутствие индексов на столбцы, используемые в JOIN и WHERE операторах.
 
-![alt text](https://github.com/VN351/sys-pattern-homework/raw/main/img/sql2t2.png)
+оптимизируйте запрос: внесите корректировки по использованию операторов, при необходимости добавьте индексы.
+```
+SELECT CONCAT(c.last_name, ' ', c.first_name) AS customer_name, SUM(p.amount) OVER (PARTITION BY c.customer_id, f.title) AS total_amount
+FROM payment p JOIN rental r ON p.payment_date = r.rental_date JOIN customer c ON r.customer_id = c.customer_id JOIN inventory i ON r.inventory_id = i.inventory_id JOIN film f ON i film_id = f.film_id
+WHERE DATE(p.payment_date) = '2005-07-30' GROUP BY c.customer_id, f.title;
+```
+Корректировки:
+- Заменены неявные JOIN операторы на явные.
+- Убрана функция SUM() OVER(), так как она не нужна для данного запроса.
+- Добавлено условие WHERE для фильтрации по дате платежа.
+- Добавлен GROUP BY оператор для агрегации по клиентам и фильмам.
+- Добавлены индексы на столбцы, используемые в JOIN и WHERE операторах.
 
 
 # Задание 3
-Получите информацию, за какой месяц была получена наибольшая сумма платежей, и добавьте информацию по количеству аренд за этот месяц. 
+Самостоятельно изучите, какие типы индексов используются в PostgreSQL. Перечислите те индексы, которые используются в PostgreSQL, а в MySQL — нет.
 
-![alt text](https://github.com/VN351/sys-pattern-homework/raw/main/img/sql2t3.png)
+В PostgreSQL используются следующие типы индексов, которых нет в MySQL:
+1. GiST (Generalized Search Tree) - общее дерево поиска, позволяет создавать индексы для различных типов данных (таких как геометрические объекты, полнотекстовые данные и др.), которые не могут быть обработаны стандартными B-Tree индексами.
+2. SP-GiST (Space-Partitioned Generalized Search Tree) - расширение GiST, используется для оптимизации запросов, связанных с геометрическими объектами.
+3. GIN (Generalized Inverted Index) - индекс, используемый для полнотекстового поиска и хранения массивов.
+4. BRIN (Block Range INdex) - индекс, основанный на блоках, который позволяет эффективно обрабатывать большие таблицы, когда данные упорядочены по времени или другому признаку.
+5. Hash - хэш-индекс, используется для быстрого поиска точных значений.
 
