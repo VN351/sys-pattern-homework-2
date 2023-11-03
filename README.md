@@ -45,6 +45,13 @@ SELECT CONCAT(c.last_name, ' ', c.first_name) AS customer_name, SUM(p.amount) OV
 FROM payment p JOIN rental r ON p.payment_date = r.rental_date JOIN customer c ON r.customer_id = c.customer_id JOIN inventory i ON r.inventory_id = i.inventory_id JOIN film f ON i film_id = f.film_id
 WHERE DATE(p.payment_date) = '2005-07-30' GROUP BY c.customer_id, f.title;
 ```
+Измененный вариант
+```
+SELECT CONCAT(c.last_name, ' ', c.first_name) AS customer_name, SUM(p.amount) OVER (PARTITION BY c.customer_id, f.title) AS total_amount
+FROM payment p INNER JOIN rental r ON p.rental_id = r.rental_id INNER JOIN customer c ON r.customer_id = c.customer_id INNER JOIN inventory i ON r.inventory_id = i.inventory_id INNER JOIN film f ON i.film_id = f.film_id
+WHERE p.payment_date >= '2005-07-30' AND p.payment_date < DATE_ADD('2005-07-30', INTERVAL 1 DAY)
+GROUP BY c.customer_id, f.title;
+```
 Корректировки:
 - Заменены неявные JOIN операторы на явные.
 - Убрана функция SUM() OVER(), так как она не нужна для данного запроса.
